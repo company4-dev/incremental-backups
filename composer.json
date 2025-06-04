@@ -1,0 +1,30 @@
+
+{
+    "name": "company4-dev/incremental-backups",
+    "description": "A library that creates backups of the target repository.",
+    "type": "project",
+    "version": "1.2.4",
+    "keywords": ["zip", "backup", "incremental"],
+    "homepage": "https://github.com/Formation-Media/incremental-backups",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Jas-n",
+            "homepage": "https://company4.dev"
+        }
+    ],
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://github.com/company4-dev/incremental-backups/issues",
+        "source": "https://github.com/company4-dev/incremental-backups"
+    },
+    "require": {
+        "php": ">=7.0.0",
+        "ext-zip": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Company4\\Incrementor\\": "src/"
+        }
+    }
+}
