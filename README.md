@@ -5,7 +5,7 @@ Incremental Backups is a package for making .zip incremental back ups
 ## Installation
 
 ```bash
-composer install company4-dev/incremental-backups
+composer require company4-dev/incremental-backups
 ```
 
 ## Usage
