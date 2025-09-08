@@ -21,8 +21,8 @@ class Incrementor
                 Storage::makeDirectory($target);
             }
         } else {
-            if (!is_dir(ROOT.$target)) {
-                mkdir(ROOT.$target, 0775, true);
+            if (!is_dir($target)) {
+                mkdir($target, 0775, true);
             }
         }
         $skips[] = $target;
@@ -50,8 +50,8 @@ class Incrementor
             if ($is_incremental) {
                 if ($this->is_laravel) {
                     $meta = json_decode(Storage::get($meta_file));
-                } elseif (is_file(ROOT.$meta_file)) {
-                    $meta = json_decode(file_get_contents(ROOT.$meta_file), true);
+                } elseif (is_file($meta_file)) {
+                    $meta = json_decode(file_get_contents($meta_file), true);
                 }
                 if ($meta['files']) {
                     $zip_name = $meta['full'].'___'.$now;
@@ -71,7 +71,7 @@ class Incrementor
             if ($this->is_laravel) {
                 $status = $archive->open(Storage::path($target), ZipArchive::CREATE);
             } else {
-                $status = $archive->open(ROOT.$target, ZipArchive::CREATE);
+                $status = $archive->open($target, ZipArchive::CREATE);
             }
             if ($status !== true) {
                 return false;
@@ -94,7 +94,7 @@ class Incrementor
             if ($this->is_laravel) {
                 Storage::put($meta_file, $meta);
             } else {
-                file_put_contents(ROOT.$meta_file, $meta);
+                file_put_contents($meta_file, $meta);
             }
             return true;
         }
@@ -105,13 +105,13 @@ class Incrementor
         if ($this->is_laravel) {
             $is_dir = Storage::exists($this->target);
         } else {
-            $is_dir = is_dir(ROOT.$this->target);
+            $is_dir = is_dir($this->target);
         }
         if ($is_dir) {
             if ($this->is_laravel) {
                 dd(__LINE__);
             } else {
-                $zips = glob(ROOT.$this->target.'/*.zip');
+                $zips = glob($this->target.'/*.zip');
             }
             if ($zips) {
                 foreach ($zips as $zip) {
