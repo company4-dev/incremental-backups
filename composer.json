@@ -5,7 +5,7 @@
     "type": "project",
     "version": "1.2.6",
     "keywords": ["zip", "backup", "incremental"],
-    "homepage": "https://github.com/Formation-Media/incremental-backups",
+    "homepage": "https://github.com/company4-dev/incremental-backups",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
