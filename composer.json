@@ -3,7 +3,7 @@
     "name": "company4-dev/incremental-backups",
     "description": "A library that creates backups of the target repository.",
     "type": "project",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "keywords": ["zip", "backup", "incremental"],
     "homepage": "https://github.com/Formation-Media/incremental-backups",
     "license": "GPL-2.0-or-later",
