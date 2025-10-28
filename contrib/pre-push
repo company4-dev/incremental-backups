@@ -7,21 +7,16 @@ if [ "$current_branch" != "main" ]; then
   exit 0
 fi
 
-# Check if the last commit is a version bump to avoid looping on re-push
-last_commit_message=$(git log -1 --pretty=%B)
-if [[ "$last_commit_message" == "bump version" ]]; then
-  echo "Last commit is already a version bump. Skipping."
-  exit 0
-fi
-
 # Bump version in package.json without creating a commit or tag yet
-new_version_v=$(npm version minor --no-git-tag-version)
+new_version_v=$(npm version minor)
 new_version=${new_version_v#v}
 
 # Create the commit and tag
 git add package.json
-git commit -m "bump version"
+git commit -m "bump version to $new_version"
 git tag "$new_version_v"
-git push --follow-tags
+
+echo "Version bumped to $new_version. The new commit and tag will be pushed."
+echo "To push both the commit and the tag, you might need to use: git push --follow-tags"
 
 exit 0
