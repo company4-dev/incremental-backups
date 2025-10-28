@@ -19,7 +19,21 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      # Drafts your next Release notes as Pull Requests are merged into "master"
-      - uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Checkout
+          uses: actions/checkout@v3
+        - name: Draft Release
+          id: draft
+          uses: release-drafter/release-drafter@v6
+          with:
+            config-name: release-drafter.yml
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        - name: Publish Release
+          uses: softprops/action-gh-release@v2
+          with:
+            tag_name: ${{ steps.draft.outputs.tag_name }}
+            name: ${{ steps.draft.outputs.name }}
+            body: ${{ steps.draft.outputs.body }}
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
