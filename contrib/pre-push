@@ -21,5 +21,7 @@ new_version=${new_version_v#v}
 # Create the commit and tag
 git add package.json
 git commit -m "bump version"
+git tag "$new_version_v"
+git push --follow-tags
 
 exit 0
