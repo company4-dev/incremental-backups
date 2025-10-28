@@ -18,7 +18,7 @@ class IteratorFilter extends RecursiveFilterIterator
         parent::__construct($recursiveIter);
     }
 
-    public function accept(): bool
+    public function accept()
     {
         foreach ($this->skips as $skip) {
             $result = preg_match('#'.$skip.'#', $this->current()->getPathname());
@@ -29,7 +29,7 @@ class IteratorFilter extends RecursiveFilterIterator
         return true;
     }
 
-    public function getChildren(): null|RecursiveFilterIterator
+    public function getChildren()
     {
         return new self($this->getInnerIterator()->getChildren(), $this->skips);
     }
