@@ -1,6 +1,6 @@
 {
     "name": "incremental-backups",
-    "version": "1.132.0",
+    "version": "1.133.0",
     "description": "A library that creates backups of the target repository.",
     "homepage": "https://github.com/company4-dev/incremental-backups",
     "bugs": {
