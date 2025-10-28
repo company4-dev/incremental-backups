@@ -13,7 +13,17 @@ if [ "$current_branch" != "main" ]; then
 fi
 
 # Bump version in package.json
-new_version_v=$(npm version minor)
+new_version_v=$(npm version minor 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "Version bump failed. Tag may already exist."
+  exit 1
+fi
+
+if [ -z "$new_version_v" ]; then
+  echo "No version tag created. Aborting push."
+  exit 1
+fi
+
 new_version=${new_version_v#v}
 
 # Commit and tag
