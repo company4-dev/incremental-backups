@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Skip if already pushed by this hook
+if [ "$SKIP_PRE_PUSH" = "true" ]; then
+  exit 0
+fi
+
 # Ensure we are on the main branch before bumping version
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 if [ "$current_branch" != "main" ]; then
@@ -7,16 +12,19 @@ if [ "$current_branch" != "main" ]; then
   exit 0
 fi
 
-# Bump version in package.json without creating a commit or tag yet
+# Bump version in package.json
 new_version_v=$(npm version minor)
 new_version=${new_version_v#v}
 
-# Create the commit and tag
+# Commit and tag
 git add package.json
 git commit -m "bump version to $new_version"
 git tag "$new_version_v"
 
-echo "Version bumped to $new_version. The new commit and tag will be pushed."
-echo "To push both the commit and the tag, you might need to use: git push --follow-tags"
+# Push manually, skipping hook
+SKIP_PRE_PUSH=true git push origin main
+SKIP_PRE_PUSH=true git push origin "$new_version_v"
 
-exit 0
+# Cancel original push
+echo "Version bumped and pushed. Cancelling original push."
+exit 1
