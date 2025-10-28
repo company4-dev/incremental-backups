@@ -5,7 +5,6 @@ use RecursiveFilterIterator;
 
 class IteratorFilter extends RecursiveFilterIterator
 {
-
     protected $skips;
 
     public function __construct($recursiveIter, $skips)
@@ -18,7 +17,7 @@ class IteratorFilter extends RecursiveFilterIterator
         parent::__construct($recursiveIter);
     }
 
-    public function accept()
+    public function accept(): bool
     {
         foreach ($this->skips as $skip) {
             $result = preg_match('#'.$skip.'#', $this->current()->getPathname());
@@ -29,7 +28,7 @@ class IteratorFilter extends RecursiveFilterIterator
         return true;
     }
 
-    public function getChildren()
+    public function getChildren(): null|self
     {
         return new self($this->getInnerIterator()->getChildren(), $this->skips);
     }
