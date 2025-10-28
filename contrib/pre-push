@@ -1,2 +1,4 @@
 #!/bin/bash
 npm version minor
+git add package.json
+git commit -m "bump version"
