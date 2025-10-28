@@ -26,5 +26,11 @@
         "psr-4": {
             "Company4\\Incrementor\\": "src/"
         }
+    },
+    "scripts": {
+        "post-update-cmd": [
+            "cp ./contrib/pre-push ./.git/hooks/pre-push",
+            "chmod a+x ./.git/hooks/pre-push"
+        ]
     }
 }
