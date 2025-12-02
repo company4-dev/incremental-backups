@@ -2,9 +2,12 @@
 
 namespace Company4\Incrementor;
 
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Illuminate\Support\Facades\Storage;
+use Spatie\DbDumper\Databases\MySql;
 use ZipArchive;
 
 class Incrementor
@@ -43,6 +46,7 @@ class Incrementor
         }
 
         $archive           = new ZipArchive();
+        $database          = DB::connection()->getConfig();
         $meta_file         = $this->target.'/meta.json';
         $now               = date('Y-m-d_H-i-s');
         $iterator          = new RecursiveDirectoryIterator($this->dir);
@@ -89,6 +93,29 @@ class Incrementor
         if ($status !== true) {
             return false;
         }
+
+        // Backup Database
+        $file = $database['database'].'.sql';
+
+        if (App::runningUnitTests() || is_dev()) {
+            file_put_contents($this->target.$file, '/* TESTING OUTPUT. */');
+        } else {
+            MySql::create()
+                ->setDbName($database['database'])
+                ->setUserName($database['username'])
+                ->setPassword($database['password'])
+                ->excludeTables([
+                    'pulse_aggregates',
+                    'pulse_entries',
+                    'pulse_values',
+                    'telescope_entries',
+                    'telescope_entries_tags',
+                    'telescope_monitoring',
+                ])
+                ->dumpToFile($this->target.$file);
+        }
+
+        $archive->addFile($this->target.$file, 'database/'.$file);
 
         foreach ($filtered_iterator as $fileInfo) {
             if ($fileInfo->isFile()) {
