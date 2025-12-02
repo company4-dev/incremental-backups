@@ -14,7 +14,7 @@ class Incrementor
     private $skips;
     private $target;
 
-    public function __construct($dir,string $target = './', array $skips = [])
+    public function __construct(string $dir = '', string $target = './', array $skips = [])
     {
         $skips[]          = $target;
         $this->is_laravel = defined('LARAVEL_START');
@@ -36,7 +36,7 @@ class Incrementor
         $this->skips  = $skips;
     }
 
-    public function run(bool $is_incremental = true)
+    public function run(bool $is_incremental = true): bool
     {
         if (!is_dir($this->dir)) {
             return false;
@@ -56,7 +56,7 @@ class Incrementor
 
         if ($is_incremental) {
             if ($this->is_laravel) {
-                $meta = json_decode(Storage::get($meta_file));
+                $meta = json_decode(Storage::get($meta_file), true);
             } elseif (is_file($meta_file)) {
                 $meta = json_decode(file_get_contents($meta_file), true);
             }
@@ -119,13 +119,14 @@ class Incrementor
         return true;
     }
 
-    public function delete($keep = 3)
+    public function delete($keep = 3): int
     {
-        $is_dir = $this->is_laravel ? Storage::exists($this->target) : is_dir($this->target);
+        $deleted = 0;
+        $is_dir  = $this->is_laravel ? Storage::exists($this->target) : is_dir($this->target);
 
         if ($is_dir) {
             if ($this->is_laravel) {
-                dd(__LINE__);
+                $zips = glob(Storage::path($this->target).'/*.zip');
             } else {
                 $zips = glob($this->target.'/*.zip');
             }
@@ -149,9 +150,14 @@ class Incrementor
                             unlink($increment);
                         }
                     }
+
                     unlink($delete);
+
+                    $deleted++;
                 }
             }
         }
+
+        return $deleted;
     }
 }
