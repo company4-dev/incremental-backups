@@ -2,9 +2,12 @@
 
 namespace Company4\Incrementor;
 
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Illuminate\Support\Facades\Storage;
+use Spatie\DbDumper\Databases\MySql;
 use ZipArchive;
 
 class Incrementor
@@ -14,7 +17,7 @@ class Incrementor
     private $skips;
     private $target;
 
-    public function __construct($dir,string $target = './', array $skips = [])
+    public function __construct(string $dir = '', string $target = './', array $skips = [])
     {
         $skips[]          = $target;
         $this->is_laravel = defined('LARAVEL_START');
@@ -36,18 +39,20 @@ class Incrementor
         $this->skips  = $skips;
     }
 
-    public function run(bool $is_incremental = true)
+    public function run(bool $is_incremental = true): bool
     {
         if (!is_dir($this->dir)) {
             return false;
         }
 
         $archive           = new ZipArchive();
+        $database          = DB::connection()->getConfig();
         $meta_file         = $this->target.'/meta.json';
         $now               = date('Y-m-d_H-i-s');
         $iterator          = new RecursiveDirectoryIterator($this->dir);
         $filter            = new IteratorFilter($iterator, $this->skips);
         $filtered_iterator = new RecursiveIteratorIterator($filter);
+        $tmp               = sys_get_temp_dir().'/';
         $zip_name          = '';
         $meta              = [
             'full'  => '',
@@ -56,7 +61,7 @@ class Incrementor
 
         if ($is_incremental) {
             if ($this->is_laravel) {
-                $meta = json_decode(Storage::get($meta_file));
+                $meta = json_decode(Storage::get($meta_file), true);
             } elseif (is_file($meta_file)) {
                 $meta = json_decode(file_get_contents($meta_file), true);
             }
@@ -90,6 +95,29 @@ class Incrementor
             return false;
         }
 
+        // Backup Database
+        $file = $database['database'].'.sql';
+
+        if (App::runningUnitTests()) {
+            file_put_contents($tmp.$file, '/* TESTING OUTPUT. */');
+        } else {
+            MySql::create()
+                ->setDbName($database['database'])
+                ->setUserName($database['username'])
+                ->setPassword($database['password'])
+                ->excludeTables([
+                    'pulse_aggregates',
+                    'pulse_entries',
+                    'pulse_values',
+                    'telescope_entries',
+                    'telescope_entries_tags',
+                    'telescope_monitoring',
+                ])
+                ->dumpToFile($tmp.$file);
+        }
+
+        $archive->addFile($tmp.$file, 'database/'.$file);
+
         foreach ($filtered_iterator as $fileInfo) {
             if ($fileInfo->isFile()) {
                 $path = str_replace($this->dir.'/', '', $fileInfo->getRealPath());
@@ -119,13 +147,14 @@ class Incrementor
         return true;
     }
 
-    public function delete($keep = 3)
+    public function delete($keep = 3): int
     {
-        $is_dir = $this->is_laravel ? Storage::exists($this->target) : is_dir($this->target);
+        $deleted = 0;
+        $is_dir  = $this->is_laravel ? Storage::exists($this->target) : is_dir($this->target);
 
         if ($is_dir) {
             if ($this->is_laravel) {
-                dd(__LINE__);
+                $zips = glob(Storage::path($this->target).'/*.zip');
             } else {
                 $zips = glob($this->target.'/*.zip');
             }
@@ -149,9 +178,14 @@ class Incrementor
                             unlink($increment);
                         }
                     }
+
                     unlink($delete);
+
+                    $deleted++;
                 }
             }
         }
+
+        return $deleted;
     }
 }
