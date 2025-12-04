@@ -103,8 +103,9 @@ class Incrementor
         } else {
             MySql::create()
                 ->setDbName($database['database'])
-                ->setUserName($database['username'])
+                ->setHost($database['host'])
                 ->setPassword($database['password'])
+                ->setUserName($database['username'])
                 ->excludeTables([
                     'pulse_aggregates',
                     'pulse_entries',
