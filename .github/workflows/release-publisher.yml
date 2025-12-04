@@ -3,8 +3,8 @@ name: Release Publisher
 
 on:
   push:
-    tags:
-      - '*.*.*'
+    branches:
+      - main
 
 permissions:
   contents: write
