@@ -21,7 +21,11 @@ jobs:
           node-version: '24'
 
       - name: Bump npm version
-        run: npm version patch --no-git-tag-version
+        id: version
+        run: |
+            npm version patch --no-git-tag-version
+            VERSION=$(node -p "require('./package.json').version")
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit version bump
         run: |
@@ -36,3 +40,4 @@ jobs:
         with:
           draft: false
           prerelease: false
+          tag_name: "${{ steps.version.outputs.version }}"
