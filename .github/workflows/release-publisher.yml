@@ -23,7 +23,7 @@ jobs:
       - name: Bump npm version
         id: version
         run: |
-            npm version patch --no-git-tag-version
+            npm version minor --no-git-tag-version
             VERSION=$(node -p "require('./package.json').version")
             echo "version=$VERSION" >> $GITHUB_OUTPUT
 
