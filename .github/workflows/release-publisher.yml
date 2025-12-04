@@ -24,7 +24,7 @@ jobs:
         id: version
         run: |
             CURRENT_VERSION=$(node -p "require('./package.json').version")
-            NEXT_VERSION=$(node -e "const v = '$CURRENT_VERSION'.split('.'); v[2]++; console.log(v.join('.'))")
+            NEXT_VERSION=$(node -e "const v = '$CURRENT_VERSION'.split('.'); v[1]++; console.log(v.join('.'))")
             npm pkg set version=$NEXT_VERSION
             VERSION=$(node -p "require('./package.json').version")
             echo "version=$VERSION" >> $GITHUB_OUTPUT
