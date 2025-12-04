@@ -8,5 +8,6 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/company4-dev/incremental-backups.git"
-    }
+    },
+    "version": "0.0.1"
 }
