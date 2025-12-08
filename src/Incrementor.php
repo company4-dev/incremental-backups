@@ -151,6 +151,7 @@ class Incrementor
     public function delete($keep = 3): int
     {
         $deleted = 0;
+        $full    = [];
         $is_dir  = $this->is_laravel ? Storage::exists($this->target) : is_dir($this->target);
 
         if ($is_dir) {
