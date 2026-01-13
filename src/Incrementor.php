@@ -8,6 +8,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Illuminate\Support\Facades\Storage;
 use Spatie\DbDumper\Databases\MySql;
+use Throwable;
 use ZipArchive;
 
 class Incrementor
@@ -52,12 +53,19 @@ class Incrementor
         $iterator          = new RecursiveDirectoryIterator($this->dir);
         $filter            = new IteratorFilter($iterator, $this->skips);
         $filtered_iterator = new RecursiveIteratorIterator($filter);
+        $running_tests     = null;
         $tmp               = sys_get_temp_dir().'/';
         $zip_name          = '';
         $meta              = [
             'full'  => '',
             'files' => [],
         ];
+
+        try {
+            $running_tests = App::runningUnitTests();
+        } catch (Throwable $e) {
+            $running_tests = false;
+        }
 
         if ($is_incremental) {
             if ($this->is_laravel) {
@@ -98,7 +106,7 @@ class Incrementor
         // Backup Database
         $file = $database['database'].'.sql';
 
-        if (App::runningUnitTests()) {
+        if ($running_tests) {
             file_put_contents($tmp.$file, '/* TESTING OUTPUT. */');
         } else {
             MySql::create()
