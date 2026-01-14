@@ -103,10 +103,10 @@ class Incrementor
         }
 
         // Backup Database
-        $database_file = $database['database'].'.sql';
+        $database_file = $this->target.'/'.$database['database'].'.sql';
 
         if ($running_tests) {
-            file_put_contents($this->target.$database_file, '/* TESTING OUTPUT. */');
+            file_put_contents($database_file, '/* TESTING OUTPUT. */');
         } else {
             MySql::create()
                 ->setDbName($database['database'])
@@ -121,12 +121,10 @@ class Incrementor
                     'telescope_entries_tags',
                     'telescope_monitoring',
                 ])
-                ->dumpToFile($this->target.$database_file);
+                ->dumpToFile($database_file);
         }
 
-        $archive->addFile($this->target.$database_file, 'database/'.$database_file);
-
-        unlink($this->target.$database_file);
+        $archive->addFile($database_file, 'database/'.$database_file);
 
         foreach ($filtered_iterator as $fileInfo) {
             if ($fileInfo->isFile()) {
@@ -153,6 +151,9 @@ class Incrementor
         } else {
             file_put_contents($meta_file, $meta);
         }
+
+        // Clean Up
+        unlink($database_file);
 
         return true;
     }
