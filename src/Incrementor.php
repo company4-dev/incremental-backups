@@ -54,7 +54,6 @@ class Incrementor
         $filter            = new IteratorFilter($iterator, $this->skips);
         $filtered_iterator = new RecursiveIteratorIterator($filter);
         $running_tests     = null;
-        $tmp               = sys_get_temp_dir().'/';
         $zip_name          = '';
         $meta              = [
             'full'  => '',
@@ -104,10 +103,10 @@ class Incrementor
         }
 
         // Backup Database
-        $file = $database['database'].'.sql';
+        $database_file = $database['database'].'.sql';
 
         if ($running_tests) {
-            file_put_contents($tmp.$file, '/* TESTING OUTPUT. */');
+            file_put_contents($this->target.$database_file, '/* TESTING OUTPUT. */');
         } else {
             MySql::create()
                 ->setDbName($database['database'])
@@ -122,10 +121,12 @@ class Incrementor
                     'telescope_entries_tags',
                     'telescope_monitoring',
                 ])
-                ->dumpToFile($tmp.$file);
+                ->dumpToFile($this->target.$database_file);
         }
 
-        $archive->addFile($tmp.$file, 'database/'.$file);
+        $archive->addFile($this->target.$database_file, 'database/'.$database_file);
+
+        unlink($this->target.$database_file);
 
         foreach ($filtered_iterator as $fileInfo) {
             if ($fileInfo->isFile()) {
