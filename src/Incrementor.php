@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use Illuminate\Support\Facades\Storage;
 use Spatie\DbDumper\Databases\MySql;
 use Throwable;
 use ZipArchive;
@@ -20,19 +19,24 @@ class Incrementor
 
     public function __construct(string $dir = '', string $target = './', array $skips = [])
     {
+        $skips[]          = '.git';
+        $skips[]          = 'tests/.pest';
         $skips[]          = $target;
         $this->is_laravel = defined('LARAVEL_START');
+        $this->storage    = $this->is_laravel ? storage_path($target) : $target;
 
         if ($this->is_laravel) {
-            if (!Storage::exists($target)) {
-                Storage::makeDirectory($target);
-            }
-        } elseif (!is_dir($target)) {
+            $target = storage_path($target);
+        }
+
+        if (!is_dir($target)) {
             mkdir($target, 0775, true);
         }
 
         if ($this->is_laravel) {
-            $skips[] = 'storage/framework';
+            $skips[] = 'bootstrap/cache';
+            $skips[] = 'storage/framework/cache';
+            $skips[] = 'storage/framework/views';
         }
 
         $this->dir    = $dir;
@@ -67,11 +71,7 @@ class Incrementor
         }
 
         if ($is_incremental) {
-            if ($this->is_laravel) {
-                $meta = json_decode(Storage::get($meta_file), true);
-            } elseif (is_file($meta_file)) {
-                $meta = json_decode(file_get_contents($meta_file), true);
-            }
+            $meta = json_decode(file_get_contents($meta_file), true);
 
             if ($meta['files']) {
                 $zip_name = $meta['full'].'___'.$now;
@@ -92,11 +92,7 @@ class Incrementor
 
         $target = $this->target.'/'.$zip_name;
 
-        if ($this->is_laravel) {
-            $status = $archive->open(Storage::path($target), ZipArchive::CREATE);
-        } else {
-            $status = $archive->open($target, ZipArchive::CREATE);
-        }
+        $status = $archive->open($target, ZipArchive::CREATE);
 
         if ($status !== true) {
             return false;
@@ -124,7 +120,7 @@ class Incrementor
                 ->dumpToFile($database_file);
         }
 
-        $archive->addFile($database_file, 'database/'.$database_file);
+        $archive->addFile($database_file, 'database/'.basename($database_file));
 
         foreach ($filtered_iterator as $fileInfo) {
             if ($fileInfo->isFile()) {
@@ -134,9 +130,9 @@ class Incrementor
                     $meta['files'][$path] = filemtime($fileInfo->getRealPath());
 
                     if ($this->is_laravel) {
-                        $archive->addFile(base_path($path), $path);
+                        $archive->addFile(base_path($path), 'files/'.$path);
                     } else {
-                        $archive->addFile($path, str_replace($this->dir, '', $path));
+                        $archive->addFile($path, 'files/'.str_replace($this->dir, '', $path));
                     }
                 }
             }
@@ -144,16 +140,13 @@ class Incrementor
 
         $archive->close();
 
-        $meta = json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-        if ($this->is_laravel) {
-            Storage::put($meta_file, $meta);
-        } else {
-            file_put_contents($meta_file, $meta);
-        }
-
-        // Clean Up
+        file_put_contents($meta_file, json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         unlink($database_file);
+
+        // Create .gitignore
+        if (!file_exists($this->target.'/.gitignore')) {
+            file_put_contents($this->target.'/.gitignore', "*\n!.gitignore\n");
+        }
 
         return true;
     }
@@ -162,14 +155,9 @@ class Incrementor
     {
         $deleted = 0;
         $full    = [];
-        $is_dir  = $this->is_laravel ? Storage::exists($this->target) : is_dir($this->target);
 
-        if ($is_dir) {
-            if ($this->is_laravel) {
-                $zips = glob(Storage::path($this->target).'/*.zip');
-            } else {
-                $zips = glob($this->target.'/*.zip');
-            }
+        if (is_dir($this->target)) {
+            $zips = glob($this->target.'/*.zip');
 
             if ($zips) {
                 foreach ($zips as $zip) {
