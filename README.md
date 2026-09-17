@@ -32,7 +32,6 @@ First we need to tell the incrementor about what to backup and where.
 use Company4\Incrementor\Incrementor;
 
 $incrementor = new Incrementor($directory, $target, []);
-
 ```
 
 ### Run the backup

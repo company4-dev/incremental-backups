@@ -180,27 +180,26 @@ class Incrementor
 
             if ($zips) {
                 foreach ($zips as $zip) {
-                    if (!str_contains($zip, '___')) {
+                    $name = basename($zip);
+
+                    if (!str_contains($name, '___') && !str_ends_with($name, '-database.zip')) {
                         $full[] = $zip;
                     }
                 }
             }
 
-            if ($full) {
-                ksort($full);
+            if ($full && count($full) > $keep) {
+                sort($full);
 
-                $deletes = array_diff($full, array_slice($full, -$keep, $keep, true));
+                $keeps  = array_slice($full, -$keep, $keep);
+                // date of the oldest full backup we're keeping; anything older is removed
+                $cutoff = substr(basename($keeps[0]), 0, 19);
 
-                foreach ($deletes as $delete) {
-                    if ($incrementals = glob(dirname($delete).'/'.basename($delete, '.zip').'___*.zip')) {
-                        foreach ($incrementals as $increment) {
-                            unlink($increment);
-                        }
+                foreach ($zips as $zip) {
+                    if (substr(basename($zip), 0, 19) < $cutoff) {
+                        unlink($zip);
+                        $deleted++;
                     }
-
-                    unlink($delete);
-
-                    $deleted++;
                 }
             }
         }
