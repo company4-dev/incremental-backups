@@ -12,6 +12,7 @@ use ZipArchive;
 
 class Incrementor
 {
+    private bool $database_only;
     private $dir;
     private $is_laravel;
     private $skips;
@@ -44,6 +45,13 @@ class Incrementor
         $this->skips  = $skips;
     }
 
+    public function database_only(): self
+    {
+        $this->database_only = true;
+
+        return $this;
+    }
+
     public function run(bool $is_incremental = true): bool
     {
         if (!is_dir($this->dir)) {
@@ -51,14 +59,13 @@ class Incrementor
         }
 
         $archive           = new ZipArchive();
-        $database          = DB::connection()->getConfig();
         $meta_file         = $this->target.'/meta.json';
         $now               = date('Y-m-d_H-i-s');
         $iterator          = new RecursiveDirectoryIterator($this->dir);
         $filter            = new IteratorFilter($iterator, $this->skips);
         $filtered_iterator = new RecursiveIteratorIterator($filter);
         $running_tests     = null;
-        $zip_name          = '';
+        $zip_name          = $now.'.zip';
         $meta              = [
             'full'  => '',
             'files' => [],
@@ -70,24 +77,25 @@ class Incrementor
             $running_tests = false;
         }
 
-        if ($is_incremental) {
-            $meta = json_decode(file_get_contents($meta_file), true);
+        if (!$this->database_only) {
+            if ($is_incremental) {
+                $meta = json_decode(file_get_contents($meta_file), true);
 
-            if ($meta['files']) {
-                $zip_name = $meta['full'].'___'.$now;
+                if ($meta['files']) {
+                    $zip_name = $meta['full'].'___'.$now;
+                } else {
+                    $zip_name     = $now;
+                    $meta['full'] = $now;
+                }
+
+                if ($meta['files']) {
+                    $zip_name .= '-incremental';
+                }
+
+                $zip_name .= '.zip';
             } else {
-                $zip_name     = $now;
                 $meta['full'] = $now;
             }
-
-            if ($meta['files']) {
-                $zip_name .= '-incremental';
-            }
-
-            $zip_name .= '.zip';
-        } else {
-            $zip_name     = $now.'.zip';
-            $meta['full'] = $now;
         }
 
         $target = $this->target.'/'.$zip_name;
@@ -122,17 +130,19 @@ class Incrementor
 
         $archive->addFile($database_file, 'database/'.basename($database_file));
 
-        foreach ($filtered_iterator as $fileInfo) {
-            if ($fileInfo->isFile()) {
-                $path = str_replace($this->dir.'/', '', $fileInfo->getRealPath());
+        if (!$this->database_only) {
+            foreach ($filtered_iterator as $fileInfo) {
+                if ($fileInfo->isFile()) {
+                    $path = str_replace($this->dir.'/', '', $fileInfo->getRealPath());
 
-                if (!array_key_exists($path, $meta['files']) || filemtime($fileInfo->getRealPath()) > $meta['files'][$path]) {
-                    $meta['files'][$path] = filemtime($fileInfo->getRealPath());
+                    if (!array_key_exists($path, $meta['files']) || filemtime($fileInfo->getRealPath()) > $meta['files'][$path]) {
+                        $meta['files'][$path] = filemtime($fileInfo->getRealPath());
 
-                    if ($this->is_laravel) {
-                        $archive->addFile(base_path($path), 'files/'.$path);
-                    } else {
-                        $archive->addFile($path, 'files/'.str_replace($this->dir, '', $path));
+                        if ($this->is_laravel) {
+                            $archive->addFile(base_path($path), 'files/'.$path);
+                        } else {
+                            $archive->addFile($path, 'files/'.str_replace($this->dir, '', $path));
+                        }
                     }
                 }
             }
@@ -140,7 +150,10 @@ class Incrementor
 
         $archive->close();
 
-        file_put_contents($meta_file, json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        if (!$this->database_only) {
+            file_put_contents($meta_file, json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+
         unlink($database_file);
 
         // Create .gitignore
