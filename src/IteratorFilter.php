@@ -9,11 +9,7 @@ class IteratorFilter extends RecursiveFilterIterator
 
     public function __construct($recursiveIter, $skips)
     {
-        $default_regex_skips = [
-            'vendor/',
-            'node_modules/',
-        ];
-        $this->skips = array_merge($default_regex_skips, $skips);
+        $this->skips = $skips;
         parent::__construct($recursiveIter);
     }
 

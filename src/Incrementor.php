@@ -12,16 +12,18 @@ use ZipArchive;
 
 class Incrementor
 {
-    private bool $database_only;
-    private $dir;
-    private $is_laravel;
-    private $skips;
-    private $target;
+    private array $skips;
+    private bool $database_only = false;
+    private bool $is_laravel;
+    private string $dir;
+    private string $target;
 
     public function __construct(string $dir = '', string $target = './', array $skips = [])
     {
         $skips[]          = '.git';
+        $skips[]          = 'node_modules/';
         $skips[]          = 'tests/.pest';
+        $skips[]          = 'vendor/';
         $skips[]          = $target;
         $this->is_laravel = defined('LARAVEL_START');
         $this->storage    = $this->is_laravel ? storage_path($target) : $target;
@@ -52,20 +54,21 @@ class Incrementor
         return $this;
     }
 
-    public function run(bool $is_incremental = true): bool
+    public function run(bool $incremental = true): bool
     {
         if (!is_dir($this->dir)) {
             return false;
         }
 
         $archive           = new ZipArchive();
+        $database          = DB::connection()->getConfig();
         $meta_file         = $this->target.'/meta.json';
         $now               = date('Y-m-d_H-i-s');
         $iterator          = new RecursiveDirectoryIterator($this->dir);
         $filter            = new IteratorFilter($iterator, $this->skips);
         $filtered_iterator = new RecursiveIteratorIterator($filter);
         $running_tests     = null;
-        $zip_name          = $now.'.zip';
+        $zip_name          = '';
         $meta              = [
             'full'  => '',
             'files' => [],
@@ -78,7 +81,7 @@ class Incrementor
         }
 
         if (!$this->database_only) {
-            if ($is_incremental) {
+            if ($incremental) {
                 $meta = json_decode(file_get_contents($meta_file), true);
 
                 if ($meta['files']) {
@@ -95,7 +98,10 @@ class Incrementor
                 $zip_name .= '.zip';
             } else {
                 $meta['full'] = $now;
+                $zip_name     = $now.'.zip';
             }
+        } else {
+            $zip_name = $now.'-database.zip';
         }
 
         $target = $this->target.'/'.$zip_name;
@@ -164,7 +170,7 @@ class Incrementor
         return true;
     }
 
-    public function delete($keep = 3): int
+    public function delete(int $keep = 3): int
     {
         $deleted = 0;
         $full    = [];
