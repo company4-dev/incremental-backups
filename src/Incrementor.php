@@ -20,31 +20,27 @@ class Incrementor
 
     public function __construct(string $dir = '', string $target = './', array $skips = [])
     {
-        $skips[]          = '.git';
-        $skips[]          = 'node_modules/';
-        $skips[]          = 'tests/.pest';
-        $skips[]          = 'vendor/';
-        $skips[]          = $target;
-        $this->is_laravel = defined('LARAVEL_START');
-        $this->storage    = $this->is_laravel ? storage_path($target) : $target;
+        $is_laravel = defined('LARAVEL_START');
+        $skips[]    = '.git';
+        $skips[]    = 'node_modules/';
+        $skips[]    = 'tests/.pest';
+        $skips[]    = 'vendor/';
+        $skips[]    = $target;
 
-        if ($this->is_laravel) {
-            $target = storage_path($target);
-        }
-
-        if (!is_dir($target)) {
-            mkdir($target, 0775, true);
-        }
-
-        if ($this->is_laravel) {
+        if ($is_laravel) {
             $skips[] = 'bootstrap/cache';
             $skips[] = 'storage/framework/cache';
             $skips[] = 'storage/framework/views';
         }
 
-        $this->dir    = $dir;
-        $this->target = $target;
-        $this->skips  = $skips;
+        $this->dir        = $dir;
+        $this->is_laravel = $is_laravel;
+        $this->skips      = $skips;
+        $this->target     = $this->is_laravel ? storage_path($target) : $target;
+
+        if (!is_dir($this->target)) {
+            mkdir($this->target, 0775, true);
+        }
     }
 
     public function database_only(): self
