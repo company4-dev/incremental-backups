@@ -31,6 +31,14 @@ class Incrementor
             $skips[] = 'bootstrap/cache';
             $skips[] = 'storage/framework/cache';
             $skips[] = 'storage/framework/views';
+
+            $skips = array_merge(
+                $skips,
+                array_map(
+                    fn($path) => str_replace(base_path().'/', '', $path),
+                    array_keys(config('filesystems.links'))
+                )
+            );
         }
 
         $this->dir        = $dir;
@@ -60,7 +68,7 @@ class Incrementor
         $database          = DB::connection()->getConfig();
         $meta_file         = $this->target.'/meta.json';
         $now               = date('Y-m-d_H-i-s');
-        $iterator          = new RecursiveDirectoryIterator($this->dir);
+        $iterator          = new RecursiveDirectoryIterator($this->dir, RecursiveDirectoryIterator::SKIP_DOTS);
         $filter            = new IteratorFilter($iterator, $this->skips);
         $filtered_iterator = new RecursiveIteratorIterator($filter);
         $running_tests     = null;
@@ -135,16 +143,12 @@ class Incrementor
         if (!$this->database_only) {
             foreach ($filtered_iterator as $fileInfo) {
                 if ($fileInfo->isFile()) {
-                    $path = str_replace($this->dir.'/', '', $fileInfo->getRealPath());
+                    $path = $fileInfo->getRealPath();
 
                     if (!array_key_exists($path, $meta['files']) || filemtime($fileInfo->getRealPath()) > $meta['files'][$path]) {
                         $meta['files'][$path] = filemtime($fileInfo->getRealPath());
 
-                        if ($this->is_laravel) {
-                            $archive->addFile(base_path($path), 'files/'.$path);
-                        } else {
-                            $archive->addFile($path, 'files/'.str_replace($this->dir, '', $path));
-                        }
+                        $archive->addFile($path, 'files'.$path);
                     }
                 }
             }
