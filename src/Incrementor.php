@@ -80,13 +80,13 @@ class Incrementor
 
         try {
             $running_tests = App::runningUnitTests();
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $running_tests = false;
         }
 
         if (!$this->database_only) {
             if ($incremental) {
-                $meta = json_decode(file_get_contents($meta_file), true);
+                $meta = is_file($meta_file) ? json_decode(file_get_contents($meta_file), true) : $meta;
 
                 if ($meta['files']) {
                     $zip_name = $meta['full'].'___'.$now;
