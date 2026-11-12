@@ -1,7 +1,7 @@
 
 {
     "name": "company4-dev/incremental-backups",
-    "description": "A library that creates backups of the target repository.",
+    "description": "A library that creates full and incremental backups of the target repository.",
     "type": "project",
     "keywords": ["zip", "backup", "incremental"],
     "homepage": "https://github.com/company4-dev/incremental-backups",
