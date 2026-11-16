@@ -15,10 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          fetch-depth: 0
 
       - name: Generate changelog
         id: changelog
@@ -39,22 +37,29 @@ jobs:
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Bump npm version
+      - name: Calculate release version
         id: version
         run: |
-            CURRENT_VERSION=$(node -p "require('./package.json').version")
-            NEXT_VERSION=$(node -e "const v = '$CURRENT_VERSION'.split('.'); v[1]++; console.log(v.join('.'))")
-            npm pkg set version=$NEXT_VERSION
-            VERSION=$(node -p "require('./package.json').version")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if ! LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null); then
+            echo "::error::No previous release tag found; create an initial release tag first."
+            exit 1
+          fi
 
-      - name: Commit version bump
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "chore: bump version" || true
-          git push
+          if [[ "$LAST_TAG" =~ ^(v?)([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]]; then
+            TAG_PREFIX="${BASH_REMATCH[1]}"
+            MAJOR="${BASH_REMATCH[2]}"
+            MINOR="${BASH_REMATCH[3]}"
+            PATCH="${BASH_REMATCH[5]}"
+            NEXT_MINOR=$((10#$MINOR + 1))
+            VERSION="${MAJOR}.${NEXT_MINOR}"
+            if [ -n "$PATCH" ]; then
+              VERSION="${VERSION}.0"
+            fi
+            echo "tag=${TAG_PREFIX}${VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Unsupported release tag '$LAST_TAG'; expected a numeric major.minor[.patch] version."
+            exit 1
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -62,4 +67,4 @@ jobs:
           body: ${{ steps.changelog.outputs.commits }}
           draft: false
           prerelease: false
-          tag_name: "${{ steps.version.outputs.version }}"
+          tag_name: "${{ steps.version.outputs.tag }}"
